@@ -1,0 +1,1 @@
+confirm= function(){return true;}
