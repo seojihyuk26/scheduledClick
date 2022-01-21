@@ -2,6 +2,7 @@
 var clickedEl = null;
 var time = null;
 var notifier = null;
+let timer = null;
 
 function injectCode(src) {
     const script = document.createElement('script');
@@ -17,32 +18,8 @@ function injectCode(src) {
     (document.head || document.documentElement).appendChild(script);
 }
 
-
-injectCode(chrome.runtime.getURL('/closeConfirm.js'));
-
-function getNewbrdUrl(url,brdNum){
-    fetch('https://www.mofa.go.kr/www/main.do')
-    .then(function(response) {
-        // When the page is loaded convert it to text
-        return response.text()
-    })
-    .then(function(html) {
-        // Initialize the DOM parser
-        var parser = new DOMParser();
-
-        // Parse the text
-        var doc = parser.parseFromString(html, "text/html");
-
-        // You can now even select part of that html as you would in the regular DOM 
-        // Example:
-        var brdListRelativeUrl = doc.querySelectorAll('li.wow.fadeIn')[1].querySelector('a').pathname;
-        brdUrl = url+brdListRelativeUrl+"?seq="+brdNum;
-        console.log(brdUrl);
-    })
-    .catch(function(err) {  
-        console.log('Failed to fetch page: ', err);  
-    });
-    return brdUrl;
+if(window.location.hostname == "cms.mofa.go.kr"){
+    injectCode(chrome.runtime.getURL('/closeConfirm.js'));
 }
 
 function addZero(v) {
@@ -138,6 +115,8 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         // add another button
         modal.addFooterBtn('Set the timer!', 'tingle-btn tingle-btn--danger', function() {
             time = document.getElementById('foxyclick-input-timer').value;
+            
+            if(timer == null) timer = preventlogout();
 
             let dateTarget = new Date(time);
 
@@ -156,6 +135,12 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
                     let timestampText = getFullDate(new Date());
                     console.log(timestampText + " 에 클릭을 완료했습니다.");
                     notifier.success('🦊: ' + timestampText + "에 클릭을 완료했습니다.");
+                    let brdNum = getUploadbrdNum(clickedEl);
+                    let brdUrl = getNewbrdUrl("https://www.mofa.go.kr",brdNum);
+                    console.log(clickedEl);
+                    console.log(brdNum);
+                    console.log(brdUrl);
+                    if(timer != null) clearInterval(timer);
                 }
 
                 notifier.info('🦊: ' + getFullDate(dateTarget) + "에 클릭하겠습니다.");
