@@ -3,13 +3,14 @@ var clickedEl = null;
 var time = null;
 var notifier = null;
 let timer = null;
+let logoutExtend = document.querySelector('a.btn_logout');
 
 function injectCode(src) {
     const script = document.createElement('script');
     // This is why it works!
     script.src = src;
     script.onload = function() {
-        console.log("script injected");
+        console.log(src+" script injected");
         this.remove();
     };
 
@@ -18,9 +19,85 @@ function injectCode(src) {
     (document.head || document.documentElement).appendChild(script);
 }
 
-if(window.location.hostname == "cms.mofa.go.kr"){
-    injectCode(chrome.runtime.getURL('/closeConfirm.js'));
+
+// if(window.location.hostname == "cms.mofa.go.kr"){
+    // injectCode(chrome.runtime.getURL('/closeConfirm.js'));
+    // import injectingCode from '/closeConfirm.js';
+    // const src = chrome.runtime.getURL('/closeConfirm.js');
+    // (async () => {
+        // let injectingCode = await import(src);
+        // injectingCode = new injectingCode.default();
+        // console.log(injectingCode)
+        // injectingCode.confirmDelete();
+    // })();
+// }
+class ChangingMethods {
+
+    constructor(activated = true) {
+        this.activated = activated;
+        this.confirm = window.confirm;
+    }
+
+    confirmDelete() {
+        if (this.activated) {
+            injectCode(chrome.runtime.getURL('/directUpdateStts.js'));
+        }else{
+            injectCode(chrome.runtime.getURL('/updateStts.js'));
+        }
+    }
+
+    preventlogout(CheckingMin = 10) {
+        if (this.activated) {
+            let checkingms = 1000 * CheckingMin * 60;
+            return setInterval(()=>{logoutExtend.click()}, checkingms);
+        }else{
+            return null;
+        }
+    }
+
+    getUploadbrdNum(clickedEl) {
+        if (this.activated) {
+            return (new URLSearchParams(clickedEl.parent.parent.querySelector("td.al.new").querySelector("a").search)).get("seq");
+        }else{
+            return '';
+        }
+    }
+
+    getNewbrdUrl(url, brdNum) {
+        if (this.activated) {
+            fetch('https://www.mofa.go.kr/www/main.do')
+                .then(function (response) {
+                    // When the page is loaded convert it to text
+                    return response.text()
+                })
+                .then(function (html) {
+                    // Initialize the DOM parser
+                    var parser = new DOMParser();
+
+                    // Parse the text
+                    var doc = parser.parseFromString(html, "text/html");
+
+                    // You can now even select part of that html as you would in the regular DOM 
+                    // Example:
+                    var brdListRelativeUrl = doc.querySelectorAll('li.wow.fadeIn')[1].querySelector('a').pathname;
+                    brdUrl = url + brdListRelativeUrl + "?seq=" + brdNum;
+                    console.log(brdUrl);
+                })
+                .catch(function (err) {
+                    console.log('Failed to fetch page: ', err);
+                });
+            return brdUrl;
+        }else{
+            return '';
+        }
+    }
 }
+
+let injectingCode = new ChangingMethods();
+injectingCode.confirmDelete();
+// if(window.location.hostname != "cms.mofa.go.kr"){
+    // injectingCode.activated = false;
+// }
 
 function addZero(v) {
     return (v < 10 ? v = '0' + v : v);
@@ -116,7 +193,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         modal.addFooterBtn('Set the timer!', 'tingle-btn tingle-btn--danger', function() {
             time = document.getElementById('foxyclick-input-timer').value;
             
-            if(timer == null) timer = preventlogout();
+            if(timer == null) timer = injectingCode.preventlogout();
 
             let dateTarget = new Date(time);
 
@@ -135,10 +212,10 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
                     let timestampText = getFullDate(new Date());
                     console.log(timestampText + " 에 클릭을 완료했습니다.");
                     notifier.success('🦊: ' + timestampText + "에 클릭을 완료했습니다.");
-                    let brdNum = getUploadbrdNum(clickedEl);
-                    let brdUrl = getNewbrdUrl("https://www.mofa.go.kr",brdNum);
                     console.log(clickedEl);
+                    let brdNum = injectingCode.getUploadbrdNum(clickedEl);
                     console.log(brdNum);
+                    let brdUrl = injectingCode.getNewbrdUrl("https://www.mofa.go.kr",brdNum);
                     console.log(brdUrl);
                     if(timer != null) clearInterval(timer);
                 }

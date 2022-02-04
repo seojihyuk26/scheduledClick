@@ -14,7 +14,7 @@
       "matches": [ "<all_urls>" ]
    } ],
    "description": "Just right click on any element and set a timer. Easy, fast and accurate.",
-   "host_permissions": [ "https://*/", "http://*/" ],
+   "host_permissions": [ "https://*/", "http://*/","file:///C:/Users/user/Documents/code/%EB%B3%B4%EB%8F%84%EC%9E%90%EB%A3%8C%20%EB%AA%A9%EB%A1%9D.html" ],
    "icons": {
       "128": "icon128.png",
       "16": "icon16.png",
@@ -26,6 +26,6 @@
    "version": "1.1",
    "web_accessible_resources": [ {
       "matches": [ "<all_urls>" ],
-      "resources": [ "/icon128.png", "/popup.html", "/closeConfirm.js" ]
+      "resources": [ "/icon128.png", "/popup.html", "/closeConfirm.js","/directUpdateStts.js","/updateStts.js" ]
    } ]
 }
