@@ -57,7 +57,7 @@ class ChangingMethods {
 
     getUploadbrdNum(clickedEl) {
         if (this.activated) {
-            return (new URLSearchParams(clickedEl.parent.parent.querySelector("td.al.new").querySelector("a").search)).get("seq");
+            return (new URLSearchParams(clickedEl.parentElement.parentElement.querySelector("td.al.new").querySelector("a").search)).get("seq");
         }else{
             return '';
         }
@@ -65,28 +65,39 @@ class ChangingMethods {
 
     getNewbrdUrl(url, brdNum) {
         if (this.activated) {
-            fetch('https://www.mofa.go.kr/www/main.do')
-                .then(function (response) {
+                var doc = new DOMParser().parseFromString(this.responseText, "text/html");
+                console.log(doc);
+                var brdListRelativeUrl = doc.querySelectorAll('li.wow.fadeIn')[1].querySelector('a').pathname;
+                console.log(brdListRelativeUrl);
+                let brdUrl = url + brdListRelativeUrl + "?seq=" + brdNum;
+                console.log(brdUrl);
+                return brdUrl;
+            // fetch('https://www.mofa.go.kr/www/main.do',{mode: 'no-cors'})
+                // .then(function (response) {
                     // When the page is loaded convert it to text
-                    return response.text()
-                })
-                .then(function (html) {
+                    // console.log(response);
+                    // return response.text()
+                // })
+                // .then(function (html) {
                     // Initialize the DOM parser
-                    var parser = new DOMParser();
-
+                    // var parser = new DOMParser();
+                    // console.log(html);
                     // Parse the text
-                    var doc = parser.parseFromString(html, "text/html");
-
+                    // var doc = parser.parseFromString(html, "text/html");
+                    // console.log(doc);
+// 
                     // You can now even select part of that html as you would in the regular DOM 
                     // Example:
-                    var brdListRelativeUrl = doc.querySelectorAll('li.wow.fadeIn')[1].querySelector('a').pathname;
-                    brdUrl = url + brdListRelativeUrl + "?seq=" + brdNum;
-                    console.log(brdUrl);
-                })
-                .catch(function (err) {
-                    console.log('Failed to fetch page: ', err);
-                });
-            return brdUrl;
+                    // var brdListRelativeUrl = doc.querySelectorAll('li.wow.fadeIn')[1].querySelector('a').pathname;
+                    // console.log(brdListRelativeUrl);
+                    // let brdUrl = url + brdListRelativeUrl + "?seq=" + brdNum;
+                    // console.log(brdUrl);
+                    // return brdUrl;
+                // })
+                // .catch(function (err) {
+                    // console.log('Failed to fetch page: ', err);
+                    // return '';
+                // });
         }else{
             return '';
         }
@@ -98,6 +109,15 @@ injectingCode.confirmDelete();
 // if(window.location.hostname != "cms.mofa.go.kr"){
     // injectingCode.activated = false;
 // }
+if(window.location.href == "https://www.mofa.go.kr/www/main.do"){
+    document.addEventListener("DOMContentLoaded", function(){ 
+        var brdListRelativeUrl = document.querySelectorAll('li.wow.fadeIn')[1].querySelector('a').pathname;
+    chrome.runtime.sendMessage({message: "UpdateMofaBrdListUrl",mofabrdListUrl:brdListRelativeUrl}, function(response) {
+        console.log(response.farewell);
+    });
+     }, false);
+    
+}
 
 function addZero(v) {
     return (v < 10 ? v = '0' + v : v);
@@ -134,7 +154,7 @@ document.addEventListener("contextmenu", function(event){
 }, true);
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-    if (request == "getClickedEl") {
+    if (request.message == "getClickedEl") {
         if (notifier === null) {
             notifier = new AWN({
                 icons: {
@@ -201,24 +221,28 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
             if (dateNow.getTime() > dateTarget.getTime()) {
                 notifier.alert('🦊: your time is in the past. Select a time in the future.');
             } else {
-
-                var worker = new Worker(URL.createObjectURL(new Blob(["(" + foxyclick_worker_function.toString() + ")()"], {
-                    type: 'text/javascript'
-                })));
-                worker.postMessage([dateTarget]);
-
-                worker.onmessage = function(e) {
-                    clickedEl.click();
-                    let timestampText = getFullDate(new Date());
-                    console.log(timestampText + " 에 클릭을 완료했습니다.");
-                    notifier.success('🦊: ' + timestampText + "에 클릭을 완료했습니다.");
-                    console.log(clickedEl);
-                    let brdNum = injectingCode.getUploadbrdNum(clickedEl);
-                    console.log(brdNum);
-                    let brdUrl = injectingCode.getNewbrdUrl("https://www.mofa.go.kr",brdNum);
-                    console.log(brdUrl);
-                    if(timer != null) clearInterval(timer);
-                }
+                
+                setTimeout(
+                    function() {
+                        chrome.runtime.sendMessage({message: "OpenMofa"}, function(response) {
+                            clickedEl.click();
+                            let timestampText = getFullDate(new Date());
+                            console.log(timestampText + " 에 클릭을 완료했습니다.");
+                            notifier.success('🦊: ' + timestampText + "에 클릭을 완료했습니다.");
+                            console.log(clickedEl);
+                            // let brdNum = injectingCode.getUploadbrdNum(clickedEl);
+                            // console.log(brdNum);
+                            let brdUrl = '';
+                            chrome.runtime.sendMessage({message: "GetMofaBrdListUrl"}, function(response) {
+                                brdUrl = "https://www.mofa.go.kr" + response + "?seq=" + brdNum;
+                            });
+                        });
+                        // let brdUrl = injectingCode.getNewbrdUrl("https://www.mofa.go.kr",372025);
+                        console.log(brdUrl);
+                        if(timer != null) clearInterval(timer);
+                    },
+                    dateTarget.getTime() - new Date().getTime()
+                );
 
                 notifier.info('🦊: ' + getFullDate(dateTarget) + "에 클릭하겠습니다.");
                 sendResponse({

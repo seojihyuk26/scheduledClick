@@ -5,19 +5,30 @@
     <meta charset="UTF-8">
     <title>FoxyClick - instructions</title>
 </head>
-<body>
-    <p><strong>Add a timer: </strong> right click on top of your link/button, and select FoxyClick.</p>
-    <p><strong>Remove a timer: </strong> refresh the page you set the timer.</p>
-    <p><strong>Important! </strong> Refreshing the page you set the timer will remove the timer! You can have only one timer per page.</p>
-        <p><strong>Liability: </strong> we are not liable, if for some reason the automatic click does not work. Test the clicker before using it to anything important.</p>
-    <p><strong>Attributions: </strong> 
-    	<ul>
-    	<li>Logo designed by vectorstock (Image #24053388 at VectorStock.com).</li>
-    	<li>https://tingle.robinparisi.com/</li>
-    	<li>https://f3oall.github.io/awesome-notifications/</li>
-    	<li>https://flatpickr.js.org</li>
-    	</ul>
-    	</p>
-    <p><strong>Created by Juha Salo (<a href="mailto:foxyclick@poltegames.com">foxyclick@poltegames</a>) from <a href="https://poltegames.com?utm_source=foxyclick&utm_medium=extension&utm_campaign=foxyclick_about" target="_blank">Polte Games</a>!</strong></p>
+<body onload="GetImg()">
 </body>
+
+<script>
+    function GetImg(){
+        var xhr = new XMLHttpRequest();
+            var url = 'https://www.mofa.go.kr/www/main.do';
+            xhr.open("GET", url, true);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xhr.onreadystatechange = function() {
+                console.log(xhr.readyState);
+                console.log(xhr.status);
+            if (this.readyState === XMLHttpRequest.DONE && (this.status === 200 || this.status==0)) {
+                var doc = new DOMParser().parseFromString(this.responseText, "text/html");
+                console.log(doc);
+                var brdListRelativeUrl = doc.querySelectorAll('li.wow.fadeIn')[1].querySelector('a').pathname;
+                console.log(brdListRelativeUrl);
+                let brdUrl = url + brdListRelativeUrl + "?seq=" + brdNum;
+                console.log(brdUrl);
+                return brdUrl;
+                document.body.textContent = brdUrl;
+                }
+            }
+            xhr.send();
+    }
+</script>
 </html>

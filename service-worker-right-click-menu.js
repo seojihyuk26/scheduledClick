@@ -1,8 +1,10 @@
 let tab= null;
-
+let mofabrdListUrl = '';
+let MofaTab = null;
 chrome.tabs.onCreated.addListener(function(tab){
     console.log(tab);
 });
+
 
 chrome.contextMenus.onClicked.addListener(function(info, tab) {
     if (info.menuItemId == "autoclicker-right") {
@@ -56,7 +58,7 @@ chrome.contextMenus.onClicked.addListener(function(info, tab) {
                                                             },
                                                             (injectionResults8) => {
                                                                 (async()=>{tab = await chrome.tabs.query({})})();
-                                                                chrome.tabs.sendMessage(tab.id, "getClickedEl", {
+                                                                chrome.tabs.sendMessage(tab.id, {message:"getClickedEl",mofabrdListUrl:mofabrdListUrl}, {
                                                                     frameId: info.frameId
                                                                 }, data => {});
                                                             });
@@ -68,6 +70,24 @@ chrome.contextMenus.onClicked.addListener(function(info, tab) {
             });
     }
 });
+
+chrome.runtime.onMessage.addListener(
+    function(request, sender, sendResponse) {
+        if(request.message === "UpdateMofaBrdListUrl"){
+            mofabrdListUrl = request.mofabrdListUrl;
+            if(MofaTab != null){
+                chrome.tabs.remove(MofaTab.id);
+                MofaTab =null;
+            }
+        }else if(request.message === "OpenMofa"){
+            chrome.tabs.create({ url: 'https://www.mofa.go.kr/www/main.do' },(tab)=>{
+                MofaTab = tab;
+            });
+        }else if(request.message === "GetMofaBrdListUrl"){
+            sendResponse(mofabrdListUrl);
+        }
+    }
+);
 
 chrome.runtime.onInstalled.addListener(function() {
     chrome.contextMenus.create({
