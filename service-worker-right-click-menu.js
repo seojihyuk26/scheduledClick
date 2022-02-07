@@ -1,10 +1,9 @@
-let tab= null;
+let newInstanceTab= null;
 let mofabrdListUrl = '';
 let MofaTab = null;
-chrome.tabs.onCreated.addListener(function(tab){
-    console.log(tab);
-});
-
+// chrome.tabs.onCreated.addListener(function(tab){
+    // console.log(tab);
+// });
 
 chrome.contextMenus.onClicked.addListener(function(info, tab) {
     if (info.menuItemId == "autoclicker-right") {
@@ -73,19 +72,45 @@ chrome.contextMenus.onClicked.addListener(function(info, tab) {
 
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
-        if(request.message === "UpdateMofaBrdListUrl"){
-            mofabrdListUrl = request.mofabrdListUrl;
-            if(MofaTab != null){
-                chrome.tabs.remove(MofaTab.id);
-                MofaTab =null;
-            }
-        }else if(request.message === "OpenMofa"){
-            chrome.tabs.create({ url: 'https://www.mofa.go.kr/www/main.do' },(tab)=>{
-                MofaTab = tab;
+        console.log(request.message);
+        if(request.message === "fetchMofaBrdListUrl"){
+            fetch('https://www.mofa.go.kr/www/main.do')
+                .then(function (response) {
+                    // When the page is loaded convert it to text
+                    // console.log(response);
+                    return response.text()
+                })
+                .then(function (html) {
+                    sendResponse(html);
+                });
+        }else if(request.message === "Console.Log"){
+            console.log(request.Log);
+        }else if(request.message === "ppurio"){
+            chrome.tabs.create({url:"https://www.ppurio.com/mgr/PPSmsMgr.qri?act=sms_form",active:false},(tab)=>{//
+                console.log(tab);
+                chrome.tabs.onUpdated.addListener((tabId, changeInfo, updatedtab) =>{
+                    if(changeInfo.status == 'complete'){
+                        console.log(updatedtab.url);
+                        console.log((new URL(updatedtab.url)));
+                        console.log((new URL(updatedtab.url)).hostname);
+                        console.log((new URL(updatedtab.url)).pathname);
+                        console.log((new URLSearchParams(updatedtab.url)).get("target"));
+                        if(tabId == tab.id){
+                            chrome.tabs.sendMessage(tab.id,{message:"newInstanceTab",brd:request.brd},function(){
+                                // chrome.tabs.remove(tab.id);
+                                sendResponse();
+                            });
+                        }else if((new URL(updatedtab.url)).hostname == "www.ppurio.com" && (new URL(updatedtab.url)).pathname == "mgr/DFAddressRecipient.qri" && (new URLSearchParams(updatedtab.url)).get("target") == "addressbook"){
+                            chrome.tabs.sendMessage(tabId,{message:"SelectAddress"},function(){
+                                // chrome.tabs.remove(tabId);
+                                // sendResponse();
+                            });
+                        }
+                    }
+                });
             });
-        }else if(request.message === "GetMofaBrdListUrl"){
-            sendResponse(mofabrdListUrl);
         }
+        return true;
     }
 );
 
